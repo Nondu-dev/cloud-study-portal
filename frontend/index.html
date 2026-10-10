@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudStudy | Student Notes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>CloudStudy</h1>
+        <p>Your student notes, organised in one place.</p>
+    </header>
+
+    <main>
+        <section class="note-form">
+            <h2>Add a Study Note</h2>
+
+            <form id="noteForm">
+                <label for="subject">Subject</label>
+                <input id="subject" type="text" required
+                       placeholder="e.g. Cloud Computing">
+
+                <label for="title">Note Title</label>
+                <input id="title" type="text" required
+                       placeholder="e.g. Introduction to AWS">
+
+                <label for="content">Note Content</label>
+                <textarea id="content" required
+                          placeholder="Write your study notes here"></textarea>
+
+                <button type="submit">Add Note</button>
+            </form>
+        </section>
+
+        <section class="notes-section">
+            <h2>My Study Notes</h2>
+            <p id="emptyMessage">Your notes will appear here.</p>
+            <div id="notesList"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>CloudStudy | Cloud Computing Project</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
