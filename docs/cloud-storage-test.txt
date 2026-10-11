@@ -1,0 +1,5 @@
+CloudStudy - Cloud Storage Test
+
+Purpose: Testing Amazon S3 storage for the CloudStudy student notes portal.
+
+This file is a sample document uploaded to a private Amazon S3 bucket.
