@@ -1,16 +1,30 @@
+const API_URL = "https://q4mgnyvz5j.execute-api.eu-north-1.amazonaws.com";
+
 const noteForm = document.getElementById("noteForm");
 const notesList = document.getElementById("notesList");
 const emptyMessage = document.getElementById("emptyMessage");
+const apiStatus = document.getElementById("apiStatus");
 
-let notes = JSON.parse(localStorage.getItem("cloudStudyNotes")) || [];
+let notes = [];
 
-function saveNotes() {
-    localStorage.setItem("cloudStudyNotes", JSON.stringify(notes));
+async function checkApiHealth() {
+    try {
+        const response = await fetch(API_URL + "/health");
+
+        if (!response.ok) {
+            throw new Error("Health check failed");
+        }
+
+        const data = await response.json();
+        apiStatus.textContent = "Cloud connection: " + data.status;
+    } catch (error) {
+        apiStatus.textContent = "Cloud connection unavailable. Please try again.";
+        console.error("API health check failed:", error);
+    }
 }
 
 function displayNotes() {
     notesList.replaceChildren();
-
     emptyMessage.hidden = notes.length > 0;
 
     notes.forEach(function (note) {
@@ -30,13 +44,25 @@ function displayNotes() {
         deleteButton.textContent = "Delete Note";
         deleteButton.className = "delete-button";
 
-        deleteButton.addEventListener("click", function () {
-            notes = notes.filter(function (item) {
-                return item.id !== note.id;
-            });
+        deleteButton.addEventListener("click", async function () {
+            deleteButton.disabled = true;
 
-            saveNotes();
-            displayNotes();
+            try {
+                const response = await fetch(
+                    API_URL + "/notes/" + encodeURIComponent(note.noteId),
+                    { method: "DELETE" }
+                );
+
+                if (!response.ok) {
+                    throw new Error("Could not delete note");
+                }
+
+                await loadNotes();
+            } catch (error) {
+                alert("Could not delete the note. Please try again.");
+                console.error("Delete note failed:", error);
+                deleteButton.disabled = false;
+            }
         });
 
         card.append(subjectHeading, noteTitle, noteContent, deleteButton);
@@ -44,7 +70,25 @@ function displayNotes() {
     });
 }
 
-noteForm.addEventListener("submit", function (event) {
+async function loadNotes() {
+    try {
+        const response = await fetch(API_URL + "/notes");
+
+        if (!response.ok) {
+            throw new Error("Could not load notes");
+        }
+
+        const data = await response.json();
+        notes = data.notes || [];
+        displayNotes();
+    } catch (error) {
+        emptyMessage.hidden = false;
+        emptyMessage.textContent = "Could not load notes. Please refresh the page.";
+        console.error("Load notes failed:", error);
+    }
+}
+
+noteForm.addEventListener("submit", async function (event) {
     event.preventDefault();
 
     const subject = document.getElementById("subject").value.trim();
@@ -55,44 +99,37 @@ noteForm.addEventListener("submit", function (event) {
         return;
     }
 
-    const note = {
-        id: crypto.randomUUID(),
-        subject: subject,
-        title: title,
-        content: content
-    };
-
-    notes.push(note);
-    saveNotes();
-    displayNotes();
-    noteForm.reset();
-});
-
-displayNotes();
-
-
-const API_URL = "https://q4mgnyvz5j.execute-api.eu-north-1.amazonaws.com";
-
-
-async function checkApiHealth() {
-    const apiStatus = document.getElementById("apiStatus");
+    const submitButton = noteForm.querySelector("button[type='submit']");
+    submitButton.disabled = true;
 
     try {
-        const response = await fetch(API_URL + "/health");
-
-        if (!response.ok) {
-            throw new Error("API request failed");
-        }
+        const response = await fetch(API_URL + "/notes", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                subject: subject,
+                title: title,
+                content: content
+            })
+        });
 
         const data = await response.json();
 
-        apiStatus.textContent = "Cloud connection: " + data.status;
+        if (!response.ok) {
+            throw new Error(data.error || "Could not save note");
+        }
+
+        noteForm.reset();
+        await loadNotes();
     } catch (error) {
-        apiStatus.textContent = "Cloud connection unavailable. Please try again.";
-        console.error("API health check failed:", error);
+        alert("Could not save the note. Please try again.");
+        console.error("Save note failed:", error);
+    } finally {
+        submitButton.disabled = false;
     }
-}
+});
 
 checkApiHealth();
-
-
+loadNotes();
