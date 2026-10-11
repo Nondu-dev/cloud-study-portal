@@ -69,3 +69,30 @@ noteForm.addEventListener("submit", function (event) {
 });
 
 displayNotes();
+
+
+const API_URL = "https://q4mgnyvz5j.execute-api.eu-north-1.amazonaws.com";
+
+
+async function checkApiHealth() {
+    const apiStatus = document.getElementById("apiStatus");
+
+    try {
+        const response = await fetch(API_URL + "/health");
+
+        if (!response.ok) {
+            throw new Error("API request failed");
+        }
+
+        const data = await response.json();
+
+        apiStatus.textContent = "Cloud connection: " + data.status;
+    } catch (error) {
+        apiStatus.textContent = "Cloud connection unavailable. Please try again.";
+        console.error("API health check failed:", error);
+    }
+}
+
+checkApiHealth();
+
+
