@@ -34,6 +34,27 @@
             </form>
         </section>
 
+        <section class="document-section">
+            <h2>Upload a Study Document</h2>
+
+            <form id="documentForm">
+                <label for="studyDocument">
+                    Choose a document (PDF, TXT or DOCX)
+                </label>
+
+                <input
+                    id="studyDocument"
+                    type="file"
+                    accept=".pdf,.txt,.docx"
+                    required
+                >
+
+                <button type="submit">Upload Document</button>
+
+                <p id="uploadStatus" role="status"></p>
+            </form>
+        </section>
+
         <section class="notes-section">
             <h2>My Study Notes</h2>
             <p id="emptyMessage">Your notes will appear here.</p>
