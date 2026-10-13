@@ -225,6 +225,76 @@ class LambdaCreateNoteTests(unittest.TestCase):
         self.assertEqual(body["error"], "Invalid JSON")
         mock_table.put_item.assert_not_called()
 
+class LambdaDocumentUploadTests(unittest.TestCase):
+
+    def make_event(self, file_name, content_type, file_content):
+        return {
+            "requestContext": {
+                "http": {"method": "POST"}
+            },
+            "rawPath": "/documents",
+            "body": json.dumps({
+                "fileName": file_name,
+                "contentType": content_type,
+                "fileContent": file_content
+            })
+        }
+
+    @patch("backend.lambda_function.s3")
+    def test_upload_rejects_unsupported_file_type(self, mock_s3):
+        event = self.make_event(
+            "image.jpg",
+            "image/jpeg",
+            "aGVsbG8="
+        )
+
+        result = lambda_handler(event, None)
+        body = json.loads(result["body"])
+
+        self.assertEqual(result["statusCode"], 400)
+        self.assertEqual(
+            body["error"],
+            "Only PDF, TXT and DOCX files are allowed"
+        )
+        mock_s3.put_object.assert_not_called()
+
+    @patch("backend.lambda_function.s3")
+    def test_upload_rejects_mismatched_content_type(self, mock_s3):
+        event = self.make_event(
+            "notes.txt",
+            "application/pdf",
+            "aGVsbG8="
+        )
+
+        result = lambda_handler(event, None)
+        body = json.loads(result["body"])
+
+        self.assertEqual(result["statusCode"], 400)
+        self.assertEqual(
+            body["error"],
+            "File type does not match the file extension"
+        )
+        mock_s3.put_object.assert_not_called()
+
+    @patch("backend.lambda_function.s3")
+    def test_upload_rejects_missing_file_content(self, mock_s3):
+        event = self.make_event(
+            "notes.txt",
+            "text/plain",
+            ""
+        )
+
+        result = lambda_handler(event, None)
+        body = json.loads(result["body"])
+
+        self.assertEqual(result["statusCode"], 400)
+        self.assertEqual(
+            body["error"],
+            "File content is required"
+        )
+        mock_s3.put_object.assert_not_called()
+
+
 
 if __name__ == "__main__":
     unittest.main()
