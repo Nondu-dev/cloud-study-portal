@@ -127,22 +127,16 @@ class LambdaCreateNoteTests(unittest.TestCase):
 
     @patch("backend.lambda_function.table")
     def test_create_note_returns_status_201(self, mock_table):
-        event = self.make_event(self.note_data)
-
-        result = lambda_handler(event, None)
-
+        result = lambda_handler(self.make_event(self.note_data), None)
         self.assertEqual(result["statusCode"], 201)
 
     @patch("backend.lambda_function.table")
     def test_create_note_saves_note_to_database(self, mock_table):
-        event = self.make_event(self.note_data)
-
-        result = lambda_handler(event, None)
+        result = lambda_handler(self.make_event(self.note_data), None)
         body = json.loads(result["body"])
         note = body["note"]
 
         mock_table.put_item.assert_called_once_with(Item=note)
-
         self.assertEqual(note["subject"], "Cloud Computing")
         self.assertEqual(note["title"], "DynamoDB")
         self.assertEqual(
@@ -225,6 +219,7 @@ class LambdaCreateNoteTests(unittest.TestCase):
         self.assertEqual(body["error"], "Invalid JSON")
         mock_table.put_item.assert_not_called()
 
+
 class LambdaDocumentUploadTests(unittest.TestCase):
 
     def make_event(self, file_name, content_type, file_content):
@@ -243,9 +238,7 @@ class LambdaDocumentUploadTests(unittest.TestCase):
     @patch("backend.lambda_function.s3")
     def test_upload_rejects_unsupported_file_type(self, mock_s3):
         event = self.make_event(
-            "image.jpg",
-            "image/jpeg",
-            "aGVsbG8="
+            "image.jpg", "image/jpeg", "aGVsbG8="
         )
 
         result = lambda_handler(event, None)
@@ -261,9 +254,7 @@ class LambdaDocumentUploadTests(unittest.TestCase):
     @patch("backend.lambda_function.s3")
     def test_upload_rejects_mismatched_content_type(self, mock_s3):
         event = self.make_event(
-            "notes.txt",
-            "application/pdf",
-            "aGVsbG8="
+            "notes.txt", "application/pdf", "aGVsbG8="
         )
 
         result = lambda_handler(event, None)
@@ -278,11 +269,7 @@ class LambdaDocumentUploadTests(unittest.TestCase):
 
     @patch("backend.lambda_function.s3")
     def test_upload_rejects_missing_file_content(self, mock_s3):
-        event = self.make_event(
-            "notes.txt",
-            "text/plain",
-            ""
-        )
+        event = self.make_event("notes.txt", "text/plain", "")
 
         result = lambda_handler(event, None)
         body = json.loads(result["body"])
@@ -294,6 +281,67 @@ class LambdaDocumentUploadTests(unittest.TestCase):
         )
         mock_s3.put_object.assert_not_called()
 
+    @patch("backend.lambda_function.s3")
+    def test_upload_valid_txt_returns_status_201(self, mock_s3):
+        event = self.make_event(
+            "notes.txt",
+            "text/plain",
+            "SGVsbG8gQ2xvdWRTdHVkeQ=="
+        )
+
+        result = lambda_handler(event, None)
+        body = json.loads(result["body"])
+
+        self.assertEqual(result["statusCode"], 201)
+        self.assertEqual(body["fileName"], "notes.txt")
+        self.assertEqual(
+            body["message"],
+            "Document uploaded successfully"
+        )
+        mock_s3.put_object.assert_called_once()
+
+    @patch("backend.lambda_function.s3")
+    def test_upload_sends_correct_data_to_s3(self, mock_s3):
+        event = self.make_event(
+            "notes.txt",
+            "text/plain",
+            "SGVsbG8gQ2xvdWRTdHVkeQ=="
+        )
+
+        result = lambda_handler(event, None)
+        body = json.loads(result["body"])
+
+        upload_args = mock_s3.put_object.call_args.kwargs
+
+        self.assertEqual(
+            upload_args["Bucket"],
+            os.environ["BUCKET_NAME"]
+        )
+        self.assertTrue(
+            upload_args["Key"].startswith("study-documents/")
+        )
+        self.assertTrue(
+            upload_args["Key"].endswith("-notes.txt")
+        )
+        self.assertEqual(upload_args["Body"], b"Hello CloudStudy")
+        self.assertEqual(upload_args["ContentType"], "text/plain")
+        self.assertEqual(upload_args["ServerSideEncryption"], "AES256")
+        self.assertEqual(body["objectKey"], upload_args["Key"])
+
+    @patch("backend.lambda_function.s3")
+    def test_upload_rejects_invalid_base64(self, mock_s3):
+        event = self.make_event(
+            "notes.txt",
+            "text/plain",
+            "not-valid-base64!!!"
+        )
+
+        result = lambda_handler(event, None)
+        body = json.loads(result["body"])
+
+        self.assertEqual(result["statusCode"], 400)
+        self.assertEqual(body["error"], "Invalid file encoding")
+        mock_s3.put_object.assert_not_called()
 
 
 if __name__ == "__main__":
