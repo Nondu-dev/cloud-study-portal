@@ -208,6 +208,23 @@ class LambdaCreateNoteTests(unittest.TestCase):
         self.assertIn("required", body["error"])
         mock_table.put_item.assert_not_called()
 
+    @patch("backend.lambda_function.table")
+    def test_create_note_rejects_invalid_json(self, mock_table):
+        event = {
+            "requestContext": {
+                "http": {"method": "POST"}
+            },
+            "rawPath": "/notes",
+            "body": '{"subject": "Cloud Computing",'
+        }
+
+        result = lambda_handler(event, None)
+        body = json.loads(result["body"])
+
+        self.assertEqual(result["statusCode"], 400)
+        self.assertEqual(body["error"], "Invalid JSON")
+        mock_table.put_item.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
