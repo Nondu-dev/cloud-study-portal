@@ -107,5 +107,56 @@ class LambdaNotesTests(unittest.TestCase):
         self.assertEqual(body["notes"], saved_notes)
 
 
+class LambdaCreateNoteTests(unittest.TestCase):
+
+    def setUp(self):
+        self.event = {
+            "requestContext": {
+                "http": {"method": "POST"}
+            },
+            "rawPath": "/notes",
+            "body": json.dumps({
+                "subject": "Cloud Computing",
+                "title": "DynamoDB",
+                "content": "DynamoDB stores data as items."
+            })
+        }
+
+    @patch("backend.lambda_function.table")
+    def test_create_note_returns_status_201(self, mock_table):
+        result = lambda_handler(self.event, None)
+
+        self.assertEqual(result["statusCode"], 201)
+
+    @patch("backend.lambda_function.table")
+    def test_create_note_saves_note_to_database(self, mock_table):
+        result = lambda_handler(self.event, None)
+        body = json.loads(result["body"])
+        note = body["note"]
+
+        mock_table.put_item.assert_called_once_with(Item=note)
+
+        self.assertEqual(note["subject"], "Cloud Computing")
+        self.assertEqual(note["title"], "DynamoDB")
+        self.assertEqual(
+            note["content"],
+            "DynamoDB stores data as items."
+        )
+
+    @patch("backend.lambda_function.table")
+    def test_create_note_generates_unique_id(self, mock_table):
+        first_result = lambda_handler(self.event, None)
+        second_result = lambda_handler(self.event, None)
+
+        first_note = json.loads(first_result["body"])["note"]
+        second_note = json.loads(second_result["body"])["note"]
+
+        self.assertTrue(first_note["noteId"])
+        self.assertNotEqual(
+            first_note["noteId"],
+            second_note["noteId"]
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
