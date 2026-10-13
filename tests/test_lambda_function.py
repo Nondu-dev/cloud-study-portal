@@ -110,27 +110,34 @@ class LambdaNotesTests(unittest.TestCase):
 class LambdaCreateNoteTests(unittest.TestCase):
 
     def setUp(self):
-        self.event = {
+        self.note_data = {
+            "subject": "Cloud Computing",
+            "title": "DynamoDB",
+            "content": "DynamoDB stores data as items."
+        }
+
+    def make_event(self, note_data):
+        return {
             "requestContext": {
                 "http": {"method": "POST"}
             },
             "rawPath": "/notes",
-            "body": json.dumps({
-                "subject": "Cloud Computing",
-                "title": "DynamoDB",
-                "content": "DynamoDB stores data as items."
-            })
+            "body": json.dumps(note_data)
         }
 
     @patch("backend.lambda_function.table")
     def test_create_note_returns_status_201(self, mock_table):
-        result = lambda_handler(self.event, None)
+        event = self.make_event(self.note_data)
+
+        result = lambda_handler(event, None)
 
         self.assertEqual(result["statusCode"], 201)
 
     @patch("backend.lambda_function.table")
     def test_create_note_saves_note_to_database(self, mock_table):
-        result = lambda_handler(self.event, None)
+        event = self.make_event(self.note_data)
+
+        result = lambda_handler(event, None)
         body = json.loads(result["body"])
         note = body["note"]
 
@@ -145,8 +152,10 @@ class LambdaCreateNoteTests(unittest.TestCase):
 
     @patch("backend.lambda_function.table")
     def test_create_note_generates_unique_id(self, mock_table):
-        first_result = lambda_handler(self.event, None)
-        second_result = lambda_handler(self.event, None)
+        event = self.make_event(self.note_data)
+
+        first_result = lambda_handler(event, None)
+        second_result = lambda_handler(event, None)
 
         first_note = json.loads(first_result["body"])["note"]
         second_note = json.loads(second_result["body"])["note"]
@@ -156,6 +165,48 @@ class LambdaCreateNoteTests(unittest.TestCase):
             first_note["noteId"],
             second_note["noteId"]
         )
+
+    @patch("backend.lambda_function.table")
+    def test_create_note_rejects_missing_subject(self, mock_table):
+        note_data = {
+            "title": "DynamoDB",
+            "content": "Database notes"
+        }
+
+        result = lambda_handler(self.make_event(note_data), None)
+        body = json.loads(result["body"])
+
+        self.assertEqual(result["statusCode"], 400)
+        self.assertIn("required", body["error"])
+        mock_table.put_item.assert_not_called()
+
+    @patch("backend.lambda_function.table")
+    def test_create_note_rejects_missing_title(self, mock_table):
+        note_data = {
+            "subject": "Cloud Computing",
+            "content": "Database notes"
+        }
+
+        result = lambda_handler(self.make_event(note_data), None)
+        body = json.loads(result["body"])
+
+        self.assertEqual(result["statusCode"], 400)
+        self.assertIn("required", body["error"])
+        mock_table.put_item.assert_not_called()
+
+    @patch("backend.lambda_function.table")
+    def test_create_note_rejects_missing_content(self, mock_table):
+        note_data = {
+            "subject": "Cloud Computing",
+            "title": "DynamoDB"
+        }
+
+        result = lambda_handler(self.make_event(note_data), None)
+        body = json.loads(result["body"])
+
+        self.assertEqual(result["statusCode"], 400)
+        self.assertIn("required", body["error"])
+        mock_table.put_item.assert_not_called()
 
 
 if __name__ == "__main__":
