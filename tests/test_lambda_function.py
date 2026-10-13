@@ -63,5 +63,49 @@ class LambdaHealthTests(unittest.TestCase):
         self.assertEqual(body["status"], "running")
 
 
+class LambdaNotesTests(unittest.TestCase):
+
+    @patch("backend.lambda_function.table")
+    def test_get_notes_returns_status_200(self, mock_table):
+        mock_table.scan.return_value = {"Items": []}
+
+        event = {
+            "requestContext": {
+                "http": {"method": "GET"}
+            },
+            "rawPath": "/notes"
+        }
+
+        result = lambda_handler(event, None)
+
+        self.assertEqual(result["statusCode"], 200)
+        mock_table.scan.assert_called_once()
+
+    @patch("backend.lambda_function.table")
+    def test_get_notes_returns_saved_notes(self, mock_table):
+        saved_notes = [
+            {
+                "noteId": "test-note-1",
+                "subject": "Cloud Computing",
+                "title": "Amazon DynamoDB",
+                "content": "DynamoDB is a NoSQL database."
+            }
+        ]
+
+        mock_table.scan.return_value = {"Items": saved_notes}
+
+        event = {
+            "requestContext": {
+                "http": {"method": "GET"}
+            },
+            "rawPath": "/notes"
+        }
+
+        result = lambda_handler(event, None)
+        body = json.loads(result["body"])
+
+        self.assertEqual(body["notes"], saved_notes)
+
+
 if __name__ == "__main__":
     unittest.main()
