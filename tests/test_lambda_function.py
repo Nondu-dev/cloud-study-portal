@@ -1,4 +1,5 @@
-﻿import json
+
+import json
 import os
 import unittest
 from unittest.mock import patch
@@ -7,7 +8,7 @@ os.environ["TABLE_NAME"] = "CloudStudyNotes"
 os.environ["BUCKET_NAME"] = "cloud-study-portal-docs-20261011"
 
 with patch("boto3.resource"), patch("boto3.client"):
-    from backend.lambda_function import response
+    from backend.lambda_function import lambda_handler, response
 
 
 class LambdaResponseTests(unittest.TestCase):
@@ -27,6 +28,39 @@ class LambdaResponseTests(unittest.TestCase):
         result = response(201, {"message": "Created"})
         body = json.loads(result["body"])
         self.assertEqual(body["message"], "Created")
+
+
+class LambdaHealthTests(unittest.TestCase):
+
+    def test_health_endpoint_returns_status_200(self):
+        event = {
+            "requestContext": {
+                "http": {"method": "GET"}
+            },
+            "rawPath": "/health"
+        }
+
+        result = lambda_handler(event, None)
+
+        self.assertEqual(result["statusCode"], 200)
+
+    def test_health_endpoint_returns_project_information(self):
+        event = {
+            "requestContext": {
+                "http": {"method": "GET"}
+            },
+            "rawPath": "/health"
+        }
+
+        result = lambda_handler(event, None)
+        body = json.loads(result["body"])
+
+        self.assertEqual(body["message"], "Welcome to CloudStudy")
+        self.assertEqual(
+            body["project"],
+            "CloudStudy Student Notes Portal"
+        )
+        self.assertEqual(body["status"], "running")
 
 
 if __name__ == "__main__":
