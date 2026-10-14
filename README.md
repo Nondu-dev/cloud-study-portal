@@ -2,103 +2,244 @@
 
 ## 1. Project Overview
 
-CloudStudy is a cloud-based student notes and document portal developed as a solo Cloud Computing project.
+CloudStudy is a cloud-based student notes and document portal developed as a Cloud Computing project. It allows students to create, view, and delete study notes and upload study documents through a simple web interface.
 
-The application allows students to create, view, and delete study notes and upload study documents through a web interface. It uses AWS serverless services, a managed database, and cloud object storage to process and store information.
+The project demonstrates how AWS cloud services can work together to provide a backend API, persistent data storage, private document storage, access control, and monitoring.
 
 ## 2. Project Objectives
 
-- Build a web application connected to cloud services.
-- Use serverless computing to process application requests.
-- Store study notes in a managed cloud database.
-- Store uploaded study documents in private cloud storage.
-- Apply input validation and access permissions.
-- Demonstrate cloud architecture, testing, and version control.
+- Build a simple web application for managing study notes.
+- Use AWS Lambda to process backend requests.
+- Use Amazon API Gateway to expose HTTP endpoints.
+- Use Amazon DynamoDB to store notes persistently.
+- Use Amazon S3 to store uploaded documents privately.
+- Apply IAM permissions to control access to AWS resources.
+- Use Amazon CloudWatch for Lambda logging and monitoring.
 
-## 3. Implemented Features
+## 3. Main Features
 
-- **Create study notes:** Save a subject, title, and content.
-- **View study notes:** Retrieve saved notes from DynamoDB.
-- **Delete study notes:** Remove notes through the website.
-- **Upload study documents:** Upload PDF, TXT, and DOCX files.
-- **File validation:** Check document extensions, content types, and file sizes.
-- **Cloud storage:** Store uploaded documents in Amazon S3.
-- **Serverless processing:** Handle requests using AWS Lambda.
-- **HTTP API:** Connect the frontend and backend using Amazon API Gateway.
-- **Error handling:** Display status messages when operations succeed or fail.
+- Create and view study notes.
+- Delete study notes.
+- Keep notes saved in DynamoDB after refreshing the website.
+- Upload PDF, TXT, and DOCX documents.
+- Validate document file types and file sizes.
+- Store uploaded documents in a private S3 bucket.
+- Process requests through an HTTP API.
+- Display a health-check response to confirm that the backend is running.
 
-Document uploads are limited to 3 MB per file.
+## 4. AWS Services Used
 
-## 4. Technologies and Services
-
-| Technology or service | Purpose |
+| AWS service | Purpose |
 |---|---|
-| HTML5 | Frontend structure |
-| CSS3 | Frontend styling |
-| JavaScript | User interaction and API requests |
-| Python | Backend application logic |
-| AWS Lambda | Serverless request processing |
-| Amazon API Gateway | HTTP API endpoints |
-| Amazon DynamoDB | Study notes storage |
-| Amazon S3 | Study document storage |
-| AWS IAM | AWS access and permissions |
-| Amazon CloudWatch | Logging and troubleshooting |
-| Git and GitHub | Version control and source code hosting |
+| AWS Lambda | Runs the Python backend and processes requests. |
+| Amazon API Gateway | Provides HTTP endpoints for the application. |
+| Amazon DynamoDB | Stores study notes. |
+| Amazon S3 | Stores uploaded study documents privately. |
+| AWS IAM | Controls permissions for the Lambda function. |
+| Amazon CloudWatch | Stores Lambda execution logs and supports monitoring. |
 
 ## 5. System Architecture
 
-The frontend sends HTTP requests to Amazon API Gateway. API Gateway forwards the requests to AWS Lambda, which validates and processes them. Lambda then interacts with DynamoDB for study notes or Amazon S3 for uploaded documents.
+The application uses a web frontend connected to a serverless AWS backend.
 
-```text
-                 Student
-                    |
-                    v
-            CloudStudy Frontend
-                    |
-                    v
-           Amazon API Gateway
-                    |
-                    v
-               AWS Lambda
-                    |
-             +------+------+
-             |             |
-             v             v
-      Amazon DynamoDB   Amazon S3
-       Study Notes    Study Documents
+1. The student interacts with the CloudStudy website.
+2. JavaScript sends HTTP requests to Amazon API Gateway.
+3. API Gateway invokes the AWS Lambda function.
+4. Lambda reads, creates, or deletes notes in DynamoDB.
+5. Lambda uploads accepted documents to Amazon S3.
+6. CloudWatch receives the Lambda execution logs.
+
+### Architecture flow
+
+```
+Student
+   |
+   v
+CloudStudy Web Interface
+   |
+   v
+Amazon API Gateway
+   |
+   v
+AWS Lambda
+   |                 |
+   v                 v
+DynamoDB          Amazon S3
+(Study Notes)     (Documents)
+   |
+   v
+CloudWatch Logs
 ```
 
-### Study Notes Workflow
+CloudWatch receives logs from Lambda independently of the note and document storage workflows.
 
-1. The student enters a subject, title, and note content.
-2. The frontend sends the information to the API.
-3. Lambda validates the information.
-4. The note is saved in DynamoDB.
-5. The frontend retrieves and displays saved notes.
-6. The student can delete a note through the application.
+## 6. Technologies Used
 
-### Document Upload Workflow
+- HTML
+- CSS
+- JavaScript
+- Python
+- AWS Lambda
+- Amazon API Gateway
+- Amazon DynamoDB
+- Amazon S3
+- AWS IAM
+- Amazon CloudWatch
+- Python `unittest` for automated backend testing
 
-1. The student selects a supported document.
-2. The frontend validates the file type and size.
-3. The file content is sent to the API.
-4. Lambda validates the request and decodes the file content.
-5. Lambda uploads the file to the private S3 bucket.
-6. The frontend displays the upload result.
+## 7. API Endpoints
 
-## 6. API Endpoints
+The application uses the following HTTP API routes.
 
-| HTTP method | Endpoint | Description |
+| Method | Endpoint | Purpose |
 |---|---|---|
-| GET | `/health` | Checks backend availability |
-| GET | `/notes` | Retrieves study notes |
-| POST | `/notes` | Creates a study note |
-| DELETE | `/notes/{noteId}` | Deletes a study note |
-| POST | `/documents` | Uploads a study document |
+| GET | `/health` | Checks whether the backend is running. |
+| GET | `/notes` | Retrieves saved notes. |
+| POST | `/notes` | Creates a new note. |
+| DELETE | `/notes/{noteId}` | Deletes a note using its ID. |
+| POST | `/documents` | Uploads a document to S3. |
 
-## 7. Project Structure
+### Health Check
 
-```text
+The health endpoint is available at:
+
+`https://q4mgnyvz5j.execute-api.eu-north-1.amazonaws.com/health`
+
+A successful response confirms that the backend is running.
+
+Example response:
+
+```json
+{
+  "message": "Welcome to CloudStudy",
+  "project": "CloudStudy Student Notes Portal",
+  "status": "running"
+}
+```
+
+## 8. AWS Configuration
+
+The project was configured in the AWS Europe (Stockholm) region (`eu-north-1`).
+
+### AWS Lambda
+
+- Function name: `CloudStudyNotesFunction`
+- Runtime: Python 3.14
+- Execution role: `CloudStudyLambdaRole`
+
+Lambda processes API requests, validates input, manages study notes, and handles document uploads.
+
+### Amazon API Gateway
+
+- API name: `CloudStudyApi`
+- API type: HTTP API
+- Deployment stage: `$default`
+- Automatic deployment: Enabled
+
+The API connects the web frontend to the Lambda backend.
+
+### Amazon DynamoDB
+
+- Table name: `CloudStudyNotes`
+
+DynamoDB stores the notes so that they remain available after the website is refreshed.
+
+### Amazon S3
+
+- Bucket name: `cloud-study-portal-docs-20261011`
+- Document folder prefix: `study-documents/`
+- Public access: Blocked
+- Server-side encryption: SSE-S3
+
+Uploaded documents are stored in the `study-documents/` prefix inside the private bucket.
+
+### Lambda Environment Variables
+
+The Lambda function uses these environment variables:
+
+| Variable | Value |
+|---|---|
+| `TABLE_NAME` | `CloudStudyNotes` |
+| `BUCKET_NAME` | `cloud-study-portal-docs-20261011` |
+
+### CORS Configuration
+
+The API is configured to allow browser requests from the local development origin:
+
+`http://127.0.0.1:5500`
+
+The configured methods are GET, POST, and DELETE, and the allowed request header includes `content-type`.
+
+When the frontend is hosted elsewhere, the permitted origin must be updated to match the deployed website.
+
+## 9. Security Considerations
+
+The project includes the following security measures:
+
+- S3 Block Public Access is enabled.
+- Uploaded documents are stored in a private S3 bucket.
+- S3 server-side encryption uses S3-managed keys (SSE-S3).
+- The backend checks document extensions, content types, and file sizes.
+- IAM permissions restrict the Lambda function's access to the resources it needs.
+- The Lambda function uses a dedicated execution role named `CloudStudyLambdaRole`.
+- The role allows CloudWatch logging, access to the `CloudStudyNotes` DynamoDB table, and document uploads to the S3 `study-documents/` prefix.
+
+The dedicated Lambda role was tested after it was assigned to the function. The health check worked, notes remained saved after refreshing the website, and document uploads succeeded.
+
+### Current Security Limitations
+
+User authentication and per-user access control have not been implemented. The application is therefore a learning project and should not be used to store private student information in a multi-user production environment.
+
+File extension and content-type checks alone cannot guarantee that a file is safe. Additional security measures would be needed before accepting untrusted uploads in a production system.
+
+## 10. Testing and Verification
+
+The project includes automated backend unit tests.
+
+### Run the Tests
+
+From the project root, run:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+### Automated Test Coverage
+
+The 20 backend unit tests previously passed successfully.
+
+The tests cover:
+
+- Lambda response status codes, headers, and JSON responses.
+- Health endpoint behaviour.
+- Retrieving and creating notes.
+- Generating unique note IDs.
+- Saving notes through the backend.
+- Handling missing fields and invalid JSON.
+- Rejecting unsupported document types.
+- Rejecting mismatched content types.
+- Handling missing document content and invalid Base64 data.
+- Successful TXT document uploads.
+- Checking the S3 bucket, object key, content type, and server-side encryption settings.
+
+AWS services are mocked during the automated unit tests so that application logic can be tested without making real AWS requests.
+
+### Manual Verification
+
+The following behaviours have also been checked:
+
+- The health endpoint returns a successful response.
+- Notes can be created and displayed.
+- Notes remain saved after refreshing the website.
+- Documents can be uploaded through the website.
+- Uploaded document objects appear in the S3 `study-documents/` prefix.
+- The application continues working after switching the Lambda function to its dedicated execution role.
+
+## 11. Project Structure
+
+The repository contains the frontend, backend, documentation, and automated tests.
+
+```
 cloud-study-portal/
 ├── backend/
 │   └── lambda_function.py
@@ -114,92 +255,33 @@ cloud-study-portal/
 └── README.md
 ```
 
-## 8. AWS Configuration
+The structure above describes the intended organisation of the project. Confirm that the files in your GitHub repository match these paths before submitting.
 
-The application is deployed using AWS resources in the `eu-north-1` region.
+## 12. Current Limitations and Future Improvements
 
-| Resource | Purpose |
-|---|---|
-| CloudStudyNotesFunction | Lambda backend |
-| CloudStudyApi | HTTP API |
-| CloudStudyNotes | DynamoDB table |
-| S3 document bucket | Stores uploaded documents |
+### Current Limitations
 
-The Lambda function uses these environment variables:
+- User authentication has not been implemented.
+- Notes are not associated with individual student accounts.
+- The website does not yet provide a complete document listing and download interface.
+- The frontend is currently intended for local development rather than public hosting.
+- The document upload size is limited to 3 MB.
 
-- `TABLE_NAME` — identifies the DynamoDB table.
-- `BUCKET_NAME` — identifies the S3 bucket.
+### Future Improvements
 
-The API uses an automatically deployed `$default` stage.
-
-AWS IAM permissions control access to the required resources. AWS configuration and resource names may need to be adjusted when reproducing the project in another account.
-
-## 9. Security Considerations
-
-The project applies several basic cloud security measures:
-
-- The S3 bucket has Block Public Access enabled.
-- Uploaded documents are stored without making them publicly accessible.
-- S3 objects use server-side encryption with Amazon S3-managed keys (SSE-S3).
-- The backend validates document extensions, content types, and file sizes.
-- IAM policies control access to AWS resources.
-- API Gateway CORS settings restrict permitted browser origins.
-
-**Further security improvements:** Replace broad permissions on the Lambda execution role with least-privilege permissions. Add user authentication and authorization before supporting multiple students with private individual accounts. File extension and content-type checks alone do not guarantee that a file is safe.
-
-### 10. Testing and Verification
-
-### Automated Tests
-
-The backend has 20 automated unit tests, all of which passed.
-
-Run the tests from the project root using:
-
-```
-python -m unittest discover -s tests -v
-```
-
-The tests cover:
-
-- Lambda response status codes, headers, and JSON formatting.
-- Health endpoint availability and project information.
-- Retrieving study notes.
-- Creating notes, generating unique IDs, and saving data.
-- Validation of missing note fields and invalid JSON.
-- Document upload validation, including unsupported file types, mismatched content types, missing content, and invalid Base64 data.
-- Successful TXT upload handling, including the S3 bucket, object key, content type, and server-side encryption settings.
-
-The automated tests use mocks for AWS services, so they test application logic without performing real AWS operations.
-
-### Manual Verification
-
-The following checks were completed through the live application and AWS Console:
-
-- The health endpoint reports that the backend is running.
-- Study notes can be created and displayed.
-- Saved notes remain available after refreshing the page.
-- Study notes can be deleted.
-- A TXT document can be uploaded through the website.
-- The uploaded document was verified in the S3 bucket's `study-documents/` folder.
-
-## 11. Current Limitations
-
-- User registration and login are not implemented.
-- Uploaded documents can be stored, but the website does not yet provide a document listing or download interface.
-- The frontend is not yet documented as a publicly hosted website.
-- Document uploads are limited to 3 MB per file.
-- Per-user ownership and access control are not implemented.
-
-## 12. Future Improvements
-
-- Implement secure user authentication and authorization.
+- Add user authentication and authorisation.
 - Associate notes and documents with individual users.
-- Add a document listing and secure download functionality.
-- Expand automated testing.
-- Deploy the frontend to a suitable hosting service.
+- Add document listing and secure download functionality.
+- Expand automated tests and error handling.
+- Host the frontend on an appropriate AWS hosting service.
+- Add further security and monitoring improvements.
 
-## 13. Repository
+## 13. Conclusion
 
-Source code and project documentation:
+CloudStudy demonstrates how a simple student application can use AWS serverless services to manage notes and uploaded documents. The project combines a web frontend, a Python Lambda backend, API Gateway, DynamoDB, S3, IAM permissions, and CloudWatch logging.
+
+The project provides practical experience with cloud architecture, API integration, persistent storage, access control, and automated testing.
+
+## GitHub Repository
 
 [CloudStudy — GitHub Repository](https://github.com/Nondu-dev/cloud-study-portal)
