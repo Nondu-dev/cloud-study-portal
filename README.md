@@ -147,18 +147,40 @@ The project applies several basic cloud security measures:
 
 **Further security improvements:** Replace broad permissions on the Lambda execution role with least-privilege permissions. Add user authentication and authorization before supporting multiple students with private individual accounts. File extension and content-type checks alone do not guarantee that a file is safe.
 
-## 10. Testing and Verification
+### 10. Testing and Verification
 
-The following checks have been performed manually:
+### Automated Tests
+
+The backend has 20 automated unit tests, all of which passed.
+
+Run the tests from the project root using:
+
+```
+python -m unittest discover -s tests -v
+```
+
+The tests cover:
+
+- Lambda response status codes, headers, and JSON formatting.
+- Health endpoint availability and project information.
+- Retrieving study notes.
+- Creating notes, generating unique IDs, and saving data.
+- Validation of missing note fields and invalid JSON.
+- Document upload validation, including unsupported file types, mismatched content types, missing content, and invalid Base64 data.
+- Successful TXT upload handling, including the S3 bucket, object key, content type, and server-side encryption settings.
+
+The automated tests use mocks for AWS services, so they test application logic without performing real AWS operations.
+
+### Manual Verification
+
+The following checks were completed through the live application and AWS Console:
 
 - The health endpoint reports that the backend is running.
 - Study notes can be created and displayed.
 - Saved notes remain available after refreshing the page.
 - Study notes can be deleted.
 - A TXT document can be uploaded through the website.
-- The uploaded document was verified inside the S3 bucket's `study-documents/` folder.
-
-Additional testing should cover unsupported file types, oversized files, malformed requests, and failure scenarios.
+- The uploaded document was verified in the S3 bucket's `study-documents/` folder.
 
 ## 11. Current Limitations
 
