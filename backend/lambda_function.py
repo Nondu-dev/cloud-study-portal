@@ -3,6 +3,7 @@ import os
 import uuid
 import base64
 import boto3
+from datetime import datetime, timezone
 from decimal import Decimal
 
 dynamodb = boto3.resource("dynamodb")
@@ -26,6 +27,15 @@ def response(status_code, body):
     }
 
 
+def parse_body(event):
+    """Return the request body as a dict, or None if it is not a JSON object."""
+    try:
+        body = json.loads(event.get("body") or "{}")
+    except json.JSONDecodeError:
+        return None
+    return body if isinstance(body, dict) else None
+
+
 def lambda_handler(event, context):
     method = event.get("requestContext", {}).get("http", {}).get("method", "")
     path = event.get("rawPath", "")
@@ -42,9 +52,8 @@ def lambda_handler(event, context):
         return response(200, {"notes": result.get("Items", [])})
 
     if method == "POST" and path.endswith("/notes"):
-        try:
-            body = json.loads(event.get("body") or "{}")
-        except json.JSONDecodeError:
+        body = parse_body(event)
+        if body is None:
             return response(400, {"error": "Invalid JSON"})
 
         subject = str(body.get("subject", "")).strip()
@@ -60,7 +69,8 @@ def lambda_handler(event, context):
             "noteId": str(uuid.uuid4()),
             "subject": subject,
             "title": title,
-            "content": content
+            "content": content,
+            "createdAt": datetime.now(timezone.utc).isoformat()
         }
 
         table.put_item(Item=note)
@@ -76,9 +86,8 @@ def lambda_handler(event, context):
         return response(200, {"message": "Note deleted"})
 
     if method == "POST" and path.endswith("/documents"):
-        try:
-            body = json.loads(event.get("body") or "{}")
-        except json.JSONDecodeError:
+        body = parse_body(event)
+        if body is None:
             return response(400, {"error": "Invalid JSON"})
 
         file_name = os.path.basename(str(body.get("fileName", ""))).strip()

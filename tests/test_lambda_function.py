@@ -1,4 +1,3 @@
-
 import json
 import os
 import unittest
@@ -218,6 +217,66 @@ class LambdaCreateNoteTests(unittest.TestCase):
         self.assertEqual(result["statusCode"], 400)
         self.assertEqual(body["error"], "Invalid JSON")
         mock_table.put_item.assert_not_called()
+
+
+    @patch("backend.lambda_function.table")
+    def test_create_note_rejects_non_object_json(self, mock_table):
+        event = {
+            "requestContext": {
+                "http": {"method": "POST"}
+            },
+            "rawPath": "/notes",
+            "body": '["not", "an", "object"]'
+        }
+
+        result = lambda_handler(event, None)
+        body = json.loads(result["body"])
+
+        self.assertEqual(result["statusCode"], 400)
+        self.assertEqual(body["error"], "Invalid JSON")
+        mock_table.put_item.assert_not_called()
+
+    @patch("backend.lambda_function.table")
+    def test_create_note_records_created_time(self, mock_table):
+        result = lambda_handler(self.make_event(self.note_data), None)
+        note = json.loads(result["body"])["note"]
+
+        self.assertIn("createdAt", note)
+        self.assertTrue(note["createdAt"])
+
+
+class LambdaDeleteNoteTests(unittest.TestCase):
+
+    @patch("backend.lambda_function.table")
+    def test_delete_note_removes_note_by_id(self, mock_table):
+        event = {
+            "requestContext": {
+                "http": {"method": "DELETE"}
+            },
+            "rawPath": "/notes/test-note-1"
+        }
+
+        result = lambda_handler(event, None)
+
+        self.assertEqual(result["statusCode"], 200)
+        mock_table.delete_item.assert_called_once_with(
+            Key={"noteId": "test-note-1"}
+        )
+
+
+class LambdaRouteTests(unittest.TestCase):
+
+    def test_unknown_route_returns_404(self):
+        event = {
+            "requestContext": {
+                "http": {"method": "GET"}
+            },
+            "rawPath": "/unknown"
+        }
+
+        result = lambda_handler(event, None)
+
+        self.assertEqual(result["statusCode"], 404)
 
 
 class LambdaDocumentUploadTests(unittest.TestCase):
