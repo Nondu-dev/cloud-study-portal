@@ -1,4 +1,3 @@
-```css
 * {
     box-sizing: border-box;
 }
@@ -28,6 +27,7 @@ main {
 }
 
 .note-form,
+.document-section,
 .notes-section {
     background: white;
     padding: 24px;
@@ -70,6 +70,28 @@ button:hover {
     background: #104d80;
 }
 
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.delete-button:hover {
+    background: #8a1a12;
+}
+
+#apiStatus {
+    display: inline-block;
+    margin: 4px 0 0;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: #ffffff1f;
+    font-size: 0.9rem;
+}
+
+#uploadStatus {
+    margin-bottom: 0;
+}
+
 .note-card {
     border: 1px solid #dbe3ee;
     border-radius: 8px;
@@ -95,4 +117,3 @@ footer {
     padding: 20px;
     color: #64748b;
 }
-```

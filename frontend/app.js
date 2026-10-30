@@ -83,7 +83,10 @@ async function loadNotes() {
         }
 
         const data = await response.json();
-        notes = data.notes || [];
+        notes = (data.notes || []).sort(function (a, b) {
+            return (b.createdAt || "").localeCompare(a.createdAt || "");
+        });
+        emptyMessage.textContent = "Your notes will appear here.";
         displayNotes();
     } catch (error) {
         emptyMessage.hidden = false;
@@ -154,7 +157,9 @@ documentForm.addEventListener("submit", async function (event) {
     const extension = file.name.split(".").pop().toLowerCase();
     const expectedType = allowedTypes[extension];
 
-    if (!expectedType || file.type !== expectedType) {
+    // Some browsers/operating systems report an empty type for .docx files,
+    // so only reject when the browser reports a type that clearly differs.
+    if (!expectedType || (file.type && file.type !== expectedType)) {
         uploadStatus.textContent = "Choose a PDF, TXT or DOCX file with a matching file type.";
         return;
     }
