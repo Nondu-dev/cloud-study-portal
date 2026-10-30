@@ -21,6 +21,7 @@ The project demonstrates how AWS cloud services can work together to provide a b
 - Create and view study notes.
 - Delete study notes.
 - Keep notes saved in DynamoDB after refreshing the website.
+- Show the newest notes first.
 - Upload PDF, TXT, and DOCX documents.
 - Validate document file types and file sizes.
 - Store uploaded documents in a private S3 bucket.
@@ -198,15 +199,18 @@ The project includes automated backend unit tests.
 
 ### Run the Tests
 
-From the project root, run:
+From the project root, install the test dependency and run the tests:
 
 ```bash
+pip install -r requirements-dev.txt
 python -m unittest discover -s tests -v
 ```
 
+`boto3` is already included in the AWS Lambda Python runtime, so it only needs to be installed locally for testing.
+
 ### Automated Test Coverage
 
-The 20 backend unit tests previously passed successfully.
+All 24 backend unit tests pass.
 
 The tests cover:
 
@@ -214,8 +218,10 @@ The tests cover:
 - Health endpoint behaviour.
 - Retrieving and creating notes.
 - Generating unique note IDs.
-- Saving notes through the backend.
-- Handling missing fields and invalid JSON.
+- Saving notes through the backend, including the time each note was created.
+- Deleting notes by ID.
+- Handling missing fields, invalid JSON, and JSON that is not an object.
+- Returning a 404 response for unknown routes.
 - Rejecting unsupported document types.
 - Rejecting mismatched content types.
 - Handling missing document content and invalid Base64 data.
@@ -252,10 +258,10 @@ cloud-study-portal/
 │   └── cloud-storage-test.txt
 ├── screenshots/
 ├── tests/
+│   └── test_lambda_function.py
+├── requirements-dev.txt
 └── README.md
 ```
-
-The structure above describes the intended organisation of the project. Confirm that the files in your GitHub repository match these paths before submitting.
 
 ## 12. Current Limitations and Future Improvements
 
@@ -285,3 +291,5 @@ The project provides practical experience with cloud architecture, API integrati
 ## GitHub Repository
 
 [CloudStudy — GitHub Repository](https://github.com/Nondu-dev/cloud-study-portal)
+
+**Verification Code:** `WTC-B9B953LW`
